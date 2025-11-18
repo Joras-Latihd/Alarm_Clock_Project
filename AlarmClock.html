@@ -1,0 +1,432 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Pro Alarm Clock — Saroj Dhital</title>
+  <meta name="description" content="Professional alarm clock web app by Saroj Dhital. Bright, responsive UI with alarms, snooze, ringtones, and settings." />
+  <style>
+   
+    :root{
+      --bg-1: #f3f6fb; 
+      --bg-2: #e6ecf5;
+      --card: rgba(0,0,0,0.04);
+      --accent: #2563eb; 
+      --accent-2: #06b6d4;
+      --muted: rgba(0,0,0,0.65);
+      --glass: rgba(255,255,255,0.5);
+      --radius: 14px;
+      --glass-border: rgba(0,0,0,0.08);
+      --transition: 250ms cubic-bezier(.2,.9,.3,1);
+      --max-width: 980px;
+    }
+
+    /* Reset */
+    *{box-sizing:border-box}
+    html,body{height:100%}
+    body{
+      margin:0;font-family:Inter,ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",Arial;
+      background: radial-gradient(1200px 600px at 10% 10%, rgba(37,99,235,0.08), transparent),
+                  linear-gradient(180deg,var(--bg-1),var(--bg-2));
+      color:#1e293b; -webkit-font-smoothing:antialiased;
+      display:flex;align-items:center;justify-content:center;padding:36px;
+    }
+
+    /* App shell */
+    .app{
+      width:100%;max-width:var(--max-width);background:linear-gradient(180deg, rgba(255,255,255,0.9), rgba(255,255,255,0.8));
+      border-radius:20px;padding:28px;box-shadow:0 8px 30px rgba(0,0,0,0.08);border:1px solid rgba(0,0,0,0.06);
+      position:relative;overflow:hidden;
+    }
+
+    /* Subtle animated particle layer (CSS only) */
+    .particles{position:absolute;inset:0;pointer-events:none;opacity:0.35}
+    .particle{position:absolute;width:6px;height:6px;border-radius:50%;background:linear-gradient(90deg,var(--accent),var(--accent-2));animation:float 12s linear infinite;filter:blur(6px);mix-blend-mode:screen}
+    @keyframes float{0%{transform:translateY(0) translateX(0) scale(0.7);opacity:0.2}50%{opacity:0.9;scale:1.3}100%{transform:translateY(-120vh) translateX(20vw) scale(0.9);opacity:0.0}}
+
+    /* Layout */
+    .top{display:flex;gap:20px;align-items:center;justify-content:space-between}
+    .left{flex:1;display:flex;flex-direction:column;gap:18px}
+    .right{width:360px;min-width:240px}
+
+    /* Clock card */
+    .clock-card{background:linear-gradient(180deg, rgba(255,255,255,0.95), rgba(255,255,255,0.9));padding:28px;border-radius:var(--radius);border:1px solid var(--glass-border);backdrop-filter: blur(6px)}
+    .time-large{font-weight:700;font-size:68px;letter-spacing:2px;display:flex;align-items:baseline;gap:12px;color:#111827}
+    .seconds{font-size:20px;opacity:0.8;color:var(--muted);transition:var(--transition)}
+    .subtle{color:var(--muted);font-size:13px}
+
+    /* Controls */
+    .controls{display:flex;gap:12px;align-items:center}
+    .btn{background:linear-gradient(90deg, rgba(0,0,0,0.04), rgba(0,0,0,0.02));border:1px solid rgba(0,0,0,0.06);padding:10px 14px;border-radius:12px;color:var(--accent);cursor:pointer;transition:transform var(--transition),box-shadow var(--transition)}
+    .btn:hover{transform:translateY(-4px);box-shadow:0 10px 30px rgba(37,99,235,0.15)}
+    .primary{background:linear-gradient(90deg,var(--accent),var(--accent-2));color:#fff;border:none}
+
+    /* Alarm set panel */
+    .alarm-panel{display:flex;gap:12px;align-items:center}
+    select{appearance:none;background:#fff;border:1px solid rgba(0,0,0,0.08);padding:10px;border-radius:10px;color:inherit}
+    .badge{display:inline-flex;gap:8px;align-items:center;padding:8px 12px;border-radius:999px;background:linear-gradient(90deg, rgba(37,99,235,0.08), rgba(6,182,212,0.04));border:1px solid rgba(37,99,235,0.2);color:var(--accent);font-weight:600}
+
+    /* Right column - list of alarms + settings */
+    .panel{background:var(--card);padding:18px;border-radius:12px;border:1px solid rgba(0,0,0,0.06)}
+    .panel h4{margin:0 0 8px 0}
+    .alarms{display:flex;flex-direction:column;gap:10px}
+    .alarm-item{display:flex;justify-content:space-between;align-items:center;padding:10px;border-radius:10px;background:linear-gradient(180deg, rgba(255,255,255,0.6), transparent)}
+    .alarm-item .meta{color:var(--muted);font-size:13px}
+    .on{box-shadow:0 6px 24px rgba(37,99,235,0.1);border:1px solid rgba(37,99,235,0.2)}
+
+    /* Settings */
+    .settings{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+    .range{width:100%}
+    .toggle{display:inline-flex;align-items:center;gap:10px}
+
+    /* Footer */
+    footer{margin-top:18px;text-align:center;color:var(--muted);font-size:13px}
+
+    /* Alarm modal */
+    .alarm-modal{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;background:linear-gradient(0deg, rgba(0,0,0,0.4), rgba(0,0,0,0.4));backdrop-filter:blur(6px);z-index:60;opacity:0;pointer-events:none;transition:opacity 200ms}
+    .alarm-modal.active{opacity:1;pointer-events:auto}
+    .modal-card{background:linear-gradient(180deg,#ffffff,#f8fafc);padding:28px;border-radius:16px;border:1px solid rgba(0,0,0,0.08);min-width:280px;text-align:center;box-shadow:0 6px 20px rgba(0,0,0,0.12)}
+    .modal-card h2{margin:0 0 8px 0;color:#111827}
+    .modal-actions{display:flex;gap:10px;justify-content:center;margin-top:18px}
+    .danger{background:transparent;border:1px solid rgba(239,68,68,0.3);color:#b91c1c}
+
+    /* Responsive */
+    @media (max-width:880px){
+      .top{flex-direction:column}
+      .right{width:100%}
+      .time-large{font-size:48px}
+    }
+
+  </style>
+</head>
+<body>
+  <div class="app" role="application" aria-label="Alarm clock app">
+
+   <div class="particles" aria-hidden="true">
+  <h1 style="
+    position: absolute;
+    top: 2em;
+    left: 12%;
+    font-size: 1.5em;
+    font-family: 'Merriweather', serif;
+    font-weight: bold;
+    color: hsl(20, 94%, 49%);
+    text-shadow: 2px 2px 5px rgba(168, 227, 7, 0.3);
+    margin: 0;
+  ">
+    Simple Alarm Clock by Saroj DTL
+  </h1>
+</div>
+
+    <div class="top">
+      <div class="left">
+        <div class="clock-card">
+          <div style="display:flex;justify-content:space-between;align-items:center;">
+            <div>
+              <div class="time-large" id="timeDisplay">--:--:-- <span class="seconds" id="ampm">AM</span></div>
+              <div class="subtle">Digital clock • Smooth updates • Format: <span id="formatLabel">24h</span></div>
+            </div>
+            <div class="controls">
+              <button class="btn" id="toggleFormatBtn" title="Toggle 12/24 hour format">12/24</button>
+              <button class="btn" id="openSettings" title="Open settings">⚙️</button>
+            </div>
+          </div>
+
+          <div style="margin-top:18px;display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap">
+            <div class="alarm-panel">
+              <div style="display:flex;gap:8px;align-items:center">
+                <select id="hourSelect" aria-label="Hour"></select>
+                <select id="minuteSelect" aria-label="Minute"></select>
+                <select id="ampmSelect" aria-label="AM/PM" style="display:none"></select>
+              </div>
+              <button class="btn primary" id="setAlarmBtn">Set Alarm</button>
+            </div>
+
+            <div id="alarmIndicator" style="display:flex;align-items:center;gap:10px">
+              <!-- glowing badge shown when alarm exists -->
+            </div>
+          </div>
+
+        </div>
+
+        <div style="margin-top:14px;display:flex;gap:12px;align-items:center">
+          <button class="btn" id="snoozeBtn">Snooze (+5m)</button>
+          <button class="btn" id="dismissBtn">Dismiss</button>
+        </div>
+
+      </div>
+
+      <div class="right">
+        <div class="panel">
+          <h4>Active Alarms</h4>
+          <div class="alarms" id="alarmsList" aria-live="polite"></div>
+        </div>
+
+        <div class="panel" style="margin-top:12px">
+          <h4>Settings</h4>
+          <div class="settings">
+            <div>
+              <label class="subtle">Volume</label>
+              <input type="range" id="volumeRange" class="range" min="0" max="1" step="0.01" value="0.6">
+            </div>
+            <div>
+              <label class="subtle">Snooze (mins)</label>
+              <input type="number" id="snoozeDuration" min="1" max="60" value="5">
+            </div>
+            <div style="grid-column:1/3;margin-top:6px">
+              <label class="subtle">Ringtone</label>
+              <select id="ringtoneSelect" style="width:100%">
+                <option value="beep">Soft Beep (synth)</option>
+                <option value="chime">Gentle Chime</option>
+                <option value="siren">Rising Tone</option>
+              </select>
+              <div style="margin-top:8px;display:flex;gap:8px;align-items:center">
+                <input type="file" id="uploadRingtone" accept="audio/*" />
+                <button class="btn" id="previewTone">Preview</button>
+              </div>
+            </div>
+            <div style="grid-column:1/3;display:flex;gap:8px;align-items:center;margin-top:8px">
+              <label class="toggle subtle">Theme</label>
+              <button class="btn" id="toggleTheme">Toggle Accent</button>
+            </div>
+          </div>
+        </div>
+
+        <footer>
+       © All rights are reserved - Saroj Dhital
+        </footer>
+      </div>
+    </div>
+
+    <div class="alarm-modal" id="alarmModal" role="dialog" aria-modal="true" aria-hidden="true">
+      <div class="modal-card">
+        <h2 id="modalTime">Alarm</h2>
+        <p id="modalLabel">It's time!</p>
+        <div class="modal-actions">
+          <button class="btn primary" id="modalSnooze">Snooze</button>
+          <button class="btn danger" id="modalDismiss">Dismiss</button>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <script>
+   
+    const $ = id => document.getElementById(id);
+    const now = () => new Date();
+    let format24 = true;
+    let alarms = []; // {id, timeISO, label, enabled}
+    let alarmTimeouts = new Map();
+    const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    let ringtoneBuffer = null;
+    let uploadedRingtone = null;
+
+    function loadState(){
+      try{
+        const st = JSON.parse(localStorage.getItem('proAlarmState') || '{}');
+        if(typeof st.format24 === 'boolean') format24 = st.format24;
+        alarms = st.alarms || [];
+        const vol = st.volume ?? 0.6; $('volumeRange').value = vol;
+        $('snoozeDuration').value = st.snooze ?? 5;
+        $('ringtoneSelect').value = st.ringtone || 'beep';
+      }catch(e){console.warn(e)}
+    }
+    function saveState(){
+      localStorage.setItem('proAlarmState', JSON.stringify({format24,alarms,volume:parseFloat($('volumeRange').value),snooze:parseInt($('snoozeDuration').value,10),ringtone:$('ringtoneSelect').value}));
+    }
+
+      function populateTimePickers(){
+      const hSel = $('hourSelect'); const mSel = $('minuteSelect'); const ampm = $('ampmSelect');
+      hSel.innerHTML=''; mSel.innerHTML=''; ampm.innerHTML='';
+      for(let h=0;h<24;h++){const opt=document.createElement('option');opt.value=h;opt.textContent = format24 ? String(h).padStart(2,'0') : (h%12||12);hSel.appendChild(opt)}
+      for(let m=0;m<60;m++){const opt=document.createElement('option');opt.value=m;opt.textContent=String(m).padStart(2,'0');mSel.appendChild(opt)}
+      ['AM','PM'].forEach(x=>{const o=document.createElement('option');o.value=x;o.textContent=x;ampm.appendChild(o)})
+      // reflect format
+      $('ampmSelect').style.display = format24 ? 'none':'inline-block';
+      $('formatLabel').textContent = format24 ? '24h':'12h';
+    }
+
+    // ---------- Display clock ----------
+    function renderClock(){
+      const d = now();
+      let hours = d.getHours();
+      const minutes = d.getMinutes();
+      const seconds = d.getSeconds();
+      if(!format24){ $('ampm').textContent = hours>=12 ? 'PM' : 'AM'; hours = hours%12||12 }
+      $('timeDisplay').firstChild ? null : null; // noop
+      $('timeDisplay').childNodes[0] && $('timeDisplay').childNodes[0].nodeType===3 && $('timeDisplay').childNodes[0].remove();
+      const timeStr = String(hours).padStart(2,'0')+ ':' + String(minutes).padStart(2,'0') + ':' + String(seconds).padStart(2,'0');
+      $('timeDisplay').innerHTML = `<span style="font-variant-numeric:tabular-nums">${timeStr}</span> <span class="seconds" id="ampm">${!format24 ? (d.getHours()>=12?'PM':'AM') : ''}</span>`;
+    }
+    setInterval(renderClock, 500);
+    renderClock();
+
+    // ---------- Alarm management ----------
+    function scheduleAlarms(){
+      for(const t of alarmTimeouts.values()) clearTimeout(t);
+      alarmTimeouts.clear();
+
+      const nowTime = Date.now();
+      alarms.forEach(a=>{
+        if(!a.enabled) return;
+        const t = new Date(a.timeISO).getTime();
+        // If time already passed today, schedule for next day
+        let delta = t - nowTime;
+        if(delta < 0){ delta += 24*3600*1000; }
+        const id = setTimeout(()=>triggerAlarm(a), delta);
+        alarmTimeouts.set(a.id, id);
+      });
+    }
+
+    function triggerAlarm(a){
+      showModal(a);
+      playRingtone();
+    }
+
+    function addAlarmFromPicker(){
+      const h = parseInt($('hourSelect').value,10);
+      const m = parseInt($('minuteSelect').value,10);
+      let selectedHour = h;
+      if(!format24){ const ampm = $('ampmSelect').value; if(ampm==='PM' && h<12) selectedHour = (h%12)+12; if(ampm==='AM' && h===12) selectedHour = 0 }
+      const d = now(); const alarmDate = new Date(d.getFullYear(), d.getMonth(), d.getDate(), selectedHour, m, 0, 0);
+      const id = 'alarm-'+Date.now();
+      alarms.push({id, timeISO:alarmDate.toISOString(), enabled:true});
+      saveState(); renderAlarms(); scheduleAlarms();
+    }
+
+    function toggleAlarm(id){
+      const a = alarms.find(x=>x.id===id); if(!a) return; a.enabled = !a.enabled; saveState(); renderAlarms(); scheduleAlarms();
+    }
+    function removeAlarm(id){alarms = alarms.filter(x=>x.id!==id); saveState(); renderAlarms(); scheduleAlarms();}
+
+    function renderAlarms(){
+      const list = $('alarmsList'); list.innerHTML='';
+      alarms.forEach(a=>{
+        const li = document.createElement('div'); li.className='alarm-item '+(a.enabled?'on':'');
+        const d = new Date(a.timeISO);
+        const h = d.getHours(); const m = d.getMinutes();
+        const timeStr = format24 ? `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}` : `${(h%12||12)}:${String(m).padStart(2,'0')} ${h>=12?'PM':'AM'}`;
+        li.innerHTML = `<div><div style="font-weight:700">${timeStr}</div><div class="meta">${a.enabled? 'Enabled':'Disabled'}</div></div><div style="display:flex;gap:8px;align-items:center"><button class="btn" data-act="toggle" data-id="${a.id}">${a.enabled? '⏸':'▶'}</button><button class="btn" data-act="del" data-id="${a.id}">✖</button></div>`;
+        list.appendChild(li);
+      });
+      updateIndicator();
+    }
+
+    function updateIndicator(){
+      const container = $('alarmIndicator'); container.innerHTML='';
+      const hasEnabled = alarms.some(a=>a.enabled);
+      if(hasEnabled){
+        const span = document.createElement('div'); span.className='badge'; span.innerHTML = `Alarm set`;
+        container.appendChild(span);
+      }
+    }
+
+    const modal = $('alarmModal');
+    function showModal(a){
+      $('modalTime').textContent = (new Date(a.timeISO)).toLocaleTimeString();
+      modal.classList.add('active'); modal.setAttribute('aria-hidden','false');
+    }
+    function hideModal(){ modal.classList.remove('active'); modal.setAttribute('aria-hidden','true'); stopRingtone(); }
+
+    // Snooze & dismiss
+    function snoozeActive(){
+      const snoozeMin = Math.max(1, parseInt($('snoozeDuration').value,10)||5);
+      const fire = new Date(Date.now() + snoozeMin*60000);
+      const id = 'snooze-'+Date.now();
+      alarms.push({id, timeISO:fire.toISOString(), enabled:true});
+      saveState(); renderAlarms(); scheduleAlarms(); hideModal();
+    }
+    function dismissActive(){
+      hideModal(); 
+    }
+
+    // ---------- Audio / Ringtones ----------
+    function stopRingtone(){ if(audioCtx && audioCtx.state !== 'closed'){ try{ audioCtx.suspend(); }catch(e){} } }
+    function playRingtone(){
+      const vol = parseFloat($('volumeRange').value);
+      const sel = $('ringtoneSelect').value;
+      if(uploadedRingtone){ // play uploaded file/ringtone
+        const src = audioCtx.createBufferSource(); src.buffer = uploadedRingtone; const gain = audioCtx.createGain(); gain.gain.value = vol; src.connect(gain).connect(audioCtx.destination); src.loop = true; src.start(); window._ringSrc = src; return; }
+
+      const g = audioCtx.createGain(); g.gain.value = vol; g.connect(audioCtx.destination);
+      if(sel==='beep'){
+        const osc = audioCtx.createOscillator(); osc.type='sine'; osc.frequency.setValueAtTime(880, audioCtx.currentTime);
+        osc.connect(g); osc.start();
+        osc.frequency.exponentialRampToValueAtTime(440, audioCtx.currentTime + 2);
+        window._ringSrc = osc;
+      }else if(sel==='chime'){
+        const freqs = [660,880,990];
+        freqs.forEach((f,i)=>{
+          const o = audioCtx.createOscillator(); const gg = audioCtx.createGain(); gg.gain.value = vol*0.6; o.frequency.value = f; o.type='sine'; o.connect(gg); gg.connect(audioCtx.destination);
+          const t = audioCtx.currentTime + i*0.12; o.start(t); gg.gain.setValueAtTime(vol*0.6,t); gg.gain.exponentialRampToValueAtTime(0.001,t+2); o.stop(t+2.1);
+        })
+      }else if(sel==='siren'){
+        const o = audioCtx.createOscillator(); o.type='sawtooth'; const t0=audioCtx.currentTime; o.frequency.setValueAtTime(300,t0); o.frequency.linearRampToValueAtTime(1200,t0+1.6); const gg = audioCtx.createGain(); gg.gain.value = vol; o.connect(gg); gg.connect(audioCtx.destination); o.start(); window._ringSrc = o;
+      }
+    }
+
+    // Allow preview
+    $('previewTone')?.addEventListener('click', ()=>{ if(audioCtx.state==='suspended') audioCtx.resume(); playRingtone(); setTimeout(()=>{ stopRingtone(); if(window._ringSrc && window._ringSrc.stop) try{window._ringSrc.stop()}catch(e){} },2200); });
+
+    // Upload handler
+    $('uploadRingtone')?.addEventListener('change', async (e)=>{
+      const f = e.target.files && e.target.files[0]; if(!f) return;
+      const ab = await f.arrayBuffer(); const buf = await audioCtx.decodeAudioData(ab.slice(0)); uploadedRingtone = buf; alert('Ringtone uploaded and ready to use (it will loop when alarm fires).');
+    });
+
+    // ---------- UI interactions ----------
+    document.addEventListener('click', (e)=>{
+      const t = e.target; if(t.matches('#setAlarmBtn')){ addAlarmFromPicker(); }
+      if(t.matches('[data-act]')){
+        const act = t.getAttribute('data-act'); const id = t.getAttribute('data-id'); if(act==='toggle') toggleAlarm(id); if(act==='del') removeAlarm(id);
+      }
+      if(t.id==='openSettings'){
+        $('volumeRange').focus();
+      }
+    });
+
+    $('toggleFormatBtn').addEventListener('click', ()=>{ format24 = !format24; populateTimePickers(); renderAlarms(); saveState(); });
+    $('setAlarmBtn').addEventListener('click', addAlarmFromPicker);
+
+    $('snoozeBtn').addEventListener('click', ()=>{ snoozeActive(); });
+    $('dismissBtn').addEventListener('click', ()=>{ dismissActive(); });
+
+    $('modalSnooze').addEventListener('click', ()=>{ snoozeActive(); });
+    $('modalDismiss').addEventListener('click', ()=>{ dismissActive(); });
+
+    window.addEventListener('keydown',(e)=>{ if(e.key==='Escape') dismissActive(); });
+
+    // volume control live update
+    $('volumeRange').addEventListener('input', ()=>{ saveState(); });
+    $('ringtoneSelect').addEventListener('change', ()=>{ saveState(); });
+
+    $('toggleTheme').addEventListener('click', ()=>{
+      document.documentElement.style.setProperty('--accent', getComputedStyle(document.documentElement).getPropertyValue('--accent-2') || '#7dd3fc');
+    });
+
+    function makeParticles(){
+      const container = document.querySelector('.particles');
+      for(let i=0;i<18;i++){
+        const p = document.createElement('div'); p.className='particle';
+        p.style.left = Math.random()*100 + '%';
+        p.style.top = Math.random()*120 + '%';
+        p.style.width = (4 + Math.random()*10)+'px';
+        p.style.height = p.style.width;
+        p.style.animationDuration = (8 + Math.random()*12) + 's';
+        p.style.opacity = 0.06 + Math.random()*0.8;
+        container.appendChild(p);
+      }
+    }
+
+    // On first load
+    loadState(); populateTimePickers(); renderAlarms(); renderClock(); makeParticles(); scheduleAlarms();
+
+    // Accessibility: keyboard focus styles
+    document.addEventListener('keydown', (e)=>{ if(e.key==='Tab') document.body.classList.add('show-focus'); });
+
+    // Keep state up to date periodically
+    setInterval(()=>{ saveState(); }, 5000);
+  </script>
+</body>
+</html>
